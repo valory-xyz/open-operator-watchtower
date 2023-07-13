@@ -1,0 +1,147 @@
+name: Deploy service
+
+on:
+  workflow_dispatch:
+
+
+jobs:
+  deploy-infra-docker:
+    if: ${{ vars.DEPLOYMENT_TYPE == 'docker' || vars.DEPLOYMENT_TYPE == '' }}
+    runs-on: ubuntu-latest
+    continue-on-error: False
+    name: Deploy service (AWS, Docker Compose)
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Generate the service deployment
+        env:
+          SERVICE_REPO_URL: ${{ vars.SERVICE_REPO_URL }}
+          SERVICE_REPO_TAG: ${{ vars.SERVICE_REPO_TAG }}
+          SERVICE_ID: ${{ vars.SERVICE_ID }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          VARS_CONTEXT: ${{ toJson(vars) }}
+          SECRETS_CONTEXT: ${{ toJson(secrets) }}
+          DEPLOYMENT_TYPE: ${{ env.DEPLOYMENT_TYPE }}
+        run: |
+          ./scripts/generate_service_deployment.sh
+
+      - name: Store SSH public and private keys
+        env:
+          PRIVATE_KEY: ${{ secrets.OPERATOR_SSH_PRIVATE_KEY }}
+          PRIVATE_KEY_PASSPHRASE: ${{ secrets.OPERATOR_SSH_PRIVATE_KEY_PASSPHRASE }}
+        run: |
+          ./scripts/store_public_private_keys.sh
+
+      - name: Set up AWS CLI
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-2
+
+      - name: Set up Terraform Version
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.4.6
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        run: |
+          cd infra/aws/docker-compose
+          terraform init -backend-config="bucket=${{ vars.TFSTATE_S3_BUCKET }}"
+
+      - name: Terraform Plan
+        run: |
+          cd infra/aws/docker-compose
+          terraform plan
+
+      - name: Terraform Deploy
+        run: |
+          cd infra/aws/docker-compose
+          terraform apply -auto-approve
+          echo "INSTANCE_ID=$(terraform output -raw instance_id)" >> "$GITHUB_ENV"
+          echo "INSTANCE_PUBLIC_IP=$(terraform output -raw instance_public_ip)" >> "$GITHUB_ENV"
+
+      - name: Wait for the AWS EC2 instance status OK
+        run: |
+          aws ec2 wait instance-status-ok --instance-ids ${{ env.INSTANCE_ID }}
+          sleep 30
+  
+      - name: Copy and execute the service deployment script on the AWS EC2 instance
+        run: | 
+          scp -v -o StrictHostKeyChecking=no -i ${{ env.PRIVATE_KEY_FILE }} ./deploy_service.sh ubuntu@${{ env.INSTANCE_PUBLIC_IP }}:~
+          ssh -v -o StrictHostKeyChecking=no -i ${{ env.PRIVATE_KEY_FILE }} ubuntu@${{ env.INSTANCE_PUBLIC_IP }} 'nohup ~/deploy_service.sh > deploy_service.log 2>&1 &'
+
+      - name: Summary
+        run: |
+          echo "Summary:"
+          echo " - Service repository URL: ${{ vars.SERVICE_REPO_URL }}"
+          echo " - Service repository tag: ${{ vars.SERVICE_REPO_TAG }}"
+          echo " - Service ID: ${{ vars.SERVICE_ID }}"
+          echo " - AWS EC2 instance public IP: ${{ env.INSTANCE_PUBLIC_IP }}"
+          echo " - AWS EC2 instance ID: ${{ env.INSTANCE_ID }}"
+          echo ""
+          echo "Please wait until the AWS EC2 instance finishes completing the service deployment."
+
+  deploy-infra-kubernetes:
+    if: ${{ vars.DEPLOYMENT_TYPE == 'kubernetes' }}
+    runs-on: ubuntu-latest
+    continue-on-error: False
+    name: Deploy service (AWS, Kubernetes)
+    steps:
+      - name: Unsupported
+        run: |
+          echo "Kubernetes deployments are currently unsupported through GitHub actions."
+          exit 1
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Generate the service deployment (1/2)
+        env:
+          SERVICE_REPO_URL: ${{ vars.SERVICE_REPO_URL }}
+          SERVICE_REPO_TAG: ${{ vars.SERVICE_REPO_TAG }}
+          SERVICE_ID: ${{ vars.SERVICE_ID }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          VARS_CONTEXT: ${{ toJson(vars) }}
+          SECRETS_CONTEXT: ${{ toJson(secrets) }}
+          DEPLOYMENT_TYPE: ${{ vars.DEPLOYMENT_TYPE }}
+        run: |
+          ./scripts/generate_service_deployment.sh
+
+      - name: Generate the service deployment (2/2)
+        run: |
+          docker run --rm -t -v "$PWD":"/work" -w "/work" \
+          valory/open-autonomy-user:latest \
+          -c "./deploy_service.sh"
+
+      - name: Store SSH public and private keys
+        env:
+          PRIVATE_KEY: ${{ secrets.OPERATOR_SSH_PRIVATE_KEY }}
+          PRIVATE_KEY_PASSPHRASE: ${{ secrets.OPERATOR_SSH_PRIVATE_KEY_PASSPHRASE }}
+        run: |
+          ./scripts/store_public_private_keys.sh
+
+      - name: Set up AWS CLI
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-2
+
+      - name: Set up Terraform Version
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.4.6
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        run: |
+          cd infra/aws/kubernetes
+          terraform init -backend-config="bucket=${{ vars.TFSTATE_S3_BUCKET }}"
+
+      - name: Terraform Plan
+        run: |
+          cd infra/aws/kubernetes
+          terraform plan

@@ -1,0 +1,89 @@
+name: Destroy infrastructure
+
+on:
+  workflow_dispatch:
+
+
+jobs:
+  destroy-infra-docker:
+    if: ${{ vars.DEPLOYMENT_TYPE == 'docker' || vars.DEPLOYMENT_TYPE == '' }}
+    runs-on: ubuntu-latest
+    continue-on-error: False
+    name: Destroy infrastructure (AWS, Docker Compose)
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Store SSH public and private keys
+        env:
+          PRIVATE_KEY: ${{ secrets.OPERATOR_SSH_PRIVATE_KEY }}
+          PRIVATE_KEY_PASSPHRASE: ${{ secrets.OPERATOR_SSH_PRIVATE_KEY_PASSPHRASE }}
+        run: |
+          ./scripts/store_public_private_keys.sh
+
+      - name: Set up AWS CLI
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-2
+
+      - name: Set up Terraform Version
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.4.6
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        run: |
+          cd infra/aws/docker-compose
+          terraform init -backend-config="bucket=${{ vars.TFSTATE_S3_BUCKET }}"
+
+      - name: Terraform Destroy
+        run: |
+          cd infra/aws/docker-compose
+          terraform destroy -auto-approve
+
+  destroy-infra-kubernetes:
+    if: ${{ vars.DEPLOYMENT_TYPE == 'kubernetes' }}
+    runs-on: ubuntu-latest
+    continue-on-error: False
+    name: Destroy infra. (AWS, Kubernetes)
+    steps:
+      - name: Unsupported
+        run: |
+          echo "Kubernetes deployments are currently unsupported through GitHub actions."
+          exit 1
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up AWS CLI
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-2
+
+      - name: Store SSH public and private keys
+        env:
+          PRIVATE_KEY: ${{ secrets.OPERATOR_SSH_PRIVATE_KEY }}
+          PRIVATE_KEY_PASSPHRASE: ${{ secrets.OPERATOR_SSH_PRIVATE_KEY_PASSPHRASE }}
+        run: |
+          ./scripts/store_public_private_keys.sh
+
+      - name: Set up Terraform Version
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.4.6
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        run: |
+          cd infra/aws/kubernetes
+          terraform init -backend-config="bucket=${{ vars.TFSTATE_S3_BUCKET }}"
+
+      - name: Terraform Destroy
+        run: |
+          cd infra/aws/kubernetes
+          terraform destroy -auto-approve
