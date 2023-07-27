@@ -13,7 +13,7 @@ To deploy a Kubernetes cluster you need a domain name and an AWS hosted zone.
    - the name servers.
 4. Go to your registrar and update the nameservers (NS entries) of your domain to match the nameservers of the AWS hosted zone
 
-> **Note** <br />
+> **:information_source: Note** <br />
 > **Generally, it may take anywhere from a few minutes to several hours for the changes on the DNS to propagate over the Internet. In some cases, it can take up to 24-48 hours for the changes to fully propagate globally. You can track DNS propagation, e.g., using [DNS Checker](https://dnschecker.org/).**
 
 ## Deploy the cluster

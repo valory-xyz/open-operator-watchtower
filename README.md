@@ -29,7 +29,7 @@ There are two types of deployment available:
 
 By default, the deployments run in the AWS Region `us-east-2`. Read our FAQ to learn how to [deploy in a different region](./docs/faq-troubleshooting.md#deploy-different-region).
 
-> **Warning** <br />
+> **:warning: Warning** <br />
 > **Please note that deploying services in AWS using this repository may result in costs being incurred in your AWS account. These costs can include, but are not limited to, EC2 instance usage and cloud storage.**
 >
 > **Before proceeding with any deployment, it is important that you thoroughly review and understand the pricing details of the services involved. We recommend consulting the [AWS documentation](https://aws.amazon.com/pricing/) and enabling appropriate billing and [cost management](https://docs.aws.amazon.com/cost-management/latest/userguide/what-is-costmanagement.html) measures to effectively monitor and control your expenses.**
@@ -91,7 +91,7 @@ The repository is prepared to facilitate the service deployment using GitHub act
 2. **Configure cloud credentials and service parameters.**
    First, [define the following secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository) and [variables](https://docs.github.com/en/actions/learn-github-actions/variables#creating-configuration-variables-for-a-repository) in the forked repository. We recommend that you use the GitHub website UI to define them:
 
-   > **Warning** <br />
+   > **:warning: Warning** <br />
    > **Please make sure to avoid any leading or trailing white spaces or newlines when defining secrets and variables.**
 
    <small>
@@ -205,7 +205,7 @@ The repository is prepared to facilitate the service deployment using GitHub act
    ]
    ```
 
-   > **Warning** <br />
+   > **:warning: Warning** <br />
    > **Typically, it is not advisable to expose the `keys.json` file in the repository. Therefore, [we provide a mechanism](./docs/faq-troubleshooting.md#variable-overrides) where you can [define the GitHub secret](https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository) `KEYS_JSON` with the contents of the file.**
    </td>
    </tr>
@@ -230,7 +230,7 @@ The repository is prepared to facilitate the service deployment using GitHub act
    WS_RPC=&lt;ws_rpc&gt;</code>
    </pre>
 
-   > **Warning** <br />
+   > **:warning: Warning** <br />
    > **Typically, it is not advisable to expose secret/confidential variables in the repository. Therefore, [we provide a mechanism](./docs/faq-troubleshooting.md#variable-overrides) where you can you can assign them a blank value (or a placeholder value) in the file `service_vars.env`, and override their values by [defining GitHub secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository) matching the corresponding variables' names.**
 
    </td>
