@@ -47,7 +47,7 @@ echo $LOCAL_KEYS_JSON
 
 <details>
 
-<summary><b>Which variables are not allowed in the `service_vars.env` file when deploying using GitHub Actions?</b></summary>
+<summary><b>Which variables are not allowed in the <code>service_vars.env</code> file when deploying using GitHub Actions?</b></summary>
 
 For security reasons, the following variables will not be overridden with GitHub secrets or variables, even if present in the file `service_vars.env`:
 
