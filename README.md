@@ -9,7 +9,7 @@
     <a href="https://github.com/valory-xyz/open-operator-watchtower/blob/main/LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/github/license/valory-xyz/open-operator-watchtower"></a>
     <a href="https://aws.amazon.com/"><img alt="Cloud: AWS" src="https://img.shields.io/badge/cloud-AWS-orange"></a>
     <!-- <a href="https://docs.docker.com/compose/"><img alt="Deployment: Docker Compose" src="https://img.shields.io/badge/deployment-Docker%20Compose-blue"></a> -->
-    <a href="https://pypi.org/project/open-autonomy/0.10.8/"><img alt="Framework: Open Autonomy 0.10.8" src="https://img.shields.io/badge/framework-Open%20Autonomy%200.10.8-blueviolet"></a>
+    <a href="https://pypi.org/project/open-autonomy/0.11.1/"><img alt="Framework: Open Autonomy 0.11.1" src="https://img.shields.io/badge/framework-Open%20Autonomy%200.10.8-blueviolet"></a>
     <!-- <a href="https://github.com/valory-xyz/open-operator-watchtower/releases/latest">
     <img alt="Latest release" src="https://img.shields.io/github/v/release/valory-xyz/open-operator-watchtower"></a> -->
 </h1>
@@ -173,7 +173,7 @@ The repository is prepared to facilitate the service deployment using GitHub act
    </td>
    <td>Variable<br /></td>
    <td>Release tag corresponding to the version of the service you want to deploy<br />
-   <code>v0.1.0</code>
+   <code>v0.2.0</code>
    </td>
    </tr>
    </tbody>
@@ -225,7 +225,7 @@ The repository is prepared to facilitate the service deployment using GitHub act
    ON_CHAIN_SERVICE_ID=53
    CHAIN_ID=5
    TENDERMINT_P2P_URL_0=$(curl -s icanhazip.com):26656
-   
+
    HTTP_RPC=&lt;http_rpc&gt;
    WS_RPC=&lt;ws_rpc&gt;</code>
    </pre>

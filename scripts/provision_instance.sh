@@ -21,7 +21,7 @@
 
 ### usage
 # mac/linux: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/valory-xyz/open-aea/main/scripts/install.sh)"
-OPEN_AUTONOMY_VERSION=0.10.8
+OPEN_AUTONOMY_VERSION=0.11.1
 USER=ubuntu
 PORT="26656"
 TENDERMINT_P2P_URL=$(curl icanhazip.com):$PORT
