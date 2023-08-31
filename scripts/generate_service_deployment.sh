@@ -60,39 +60,37 @@ parse_env_file() {
     # .env file, or overrien if found on the JSON object passed as
     # second argument.
 
-    ENV_FILE="$1"
-    JSON="$2"
+    local env_file="$1"
+    local json="$2"
 
-    echo "   - Parsing .env file \"$ENV_FILE\""
+    echo "   - Parsing .env file \"$env_file\""
 
     # Sanitize inputs
-    if [[ ! -f "$ENV_FILE" ]]; then
-        echo "     - Warning: .env file \"$ENV_FILE\" not found: deployment might be invalid."
-        SERVICE_VARIABLES_PARSED=$'\n'"# Service variables"$'\n'"# - WARNING: File \"$ENV_FILE\" not found when generating deployment script."$'\n'"#   Deployment might be invalid."$'\n'
+    if [[ ! -f "$env_file" ]]; then
+        echo "     - Warning: .env file \"$env_file\" not found: deployment might be invalid."
+        SERVICE_VARIABLES_PARSED=$'\n'"# Service variables"$'\n'"# - WARNING: File \"$env_file\" not found when generating deployment script."$'\n'"#   Deployment might be invalid."$'\n'
         return
     fi
 
-    if [[ -z "${JSON// }" ]]; then
-        JSON="{}"
+    if [[ -z "${json// }" ]]; then
+        json="{}"
     fi
 
     # Read variables
-    VARS="$(grep -vE "^(#.*|\s*)$" $ENV_FILE | awk -F '=' '{ print "export", $0 }')"
+    local vars="$(grep -vE "^(#.*|\s*)$" "$env_file" | awk -F '=' '{ print "export", $0 }')"
 
     # Parse the JSON object and loop through its keys
-    for VAR_NAME in $(echo "$JSON" | jq -r 'keys[]'); do
-        VAR_VALUE=$(echo "$JSON" | jq -r ".$VAR_NAME")
+    for var_name in $(echo "$json" | jq -r 'keys[]'); do
+        local var_value=$(echo "$json" | jq -r ".$var_name")
 
-        # Override variables in $VARS if existing in JSON
-        if [[ -n "${VAR_VALUE// }" ]] && grep -q "export $VAR_NAME=" <<< "export $VARS="; then
-            echo "     - Overriding variable $VAR_NAME"
-            VARS=$(echo "$VARS" | sed "s#export $VAR_NAME=.*#export $VAR_NAME=$VAR_VALUE#")
+        # Override variables in $vars if existing in JSON
+        if [[ -n "${var_value// }" ]] && grep -q "export $var_name=" <<< "export $vars="; then
+            echo "     - Overriding variable $var_name"
+            vars=$(echo "$vars" | sed "s#export $var_name=.*#export $var_name=$var_value#")
         fi
     done
 
-    SERVICE_VARIABLES_PARSED=$'\n'"# Service variables"$'\n'"$VARS"$'\n'
-
-    return
+    SERVICE_VARIABLES_PARSED=$'\n'"# Service variables"$'\n'"$vars"$'\n'
 }
 
 
@@ -101,32 +99,30 @@ validate_keys_json() {
 
     echo "   - Validating KEYS_JSON"
 
-    KEYS_JSON_T="$1"
+    local keys_json="$1"
 
-    if [ -z "${KEYS_JSON_T// }" ]; then
+    if [ -z "${keys_json// }" ]; then
       echo "Error: \"KEYS_JSON\" not defined. Please review repository secrets and the file \"$SERVICE_KEYS_JSON_FILE\". Exiting script."
       exit 1
     fi
 
     # Validate KEYS_JSON format
-    if ! echo "$KEYS_JSON_T" | jq -e '. | type == "array" and length > 0 and all(.[]; type == "object" and (.address | type == "string") and (.private_key | type == "string"))' > /dev/null; then
+    if ! echo "$keys_json" | jq -e '. | type == "array" and length > 0 and all(.[]; type == "object" and (.address | type == "string") and (.private_key | type == "string"))' > /dev/null; then
       echo "Error: KEYS_JSON does not match the expected pattern. Exiting script."
       exit 1
     fi
 
     # Validate each object in KEYS_JSON
-    errors=0
-    for object in $(echo "$KEYS_JSON_T" | jq -c '.[]'); do
-      # Validate Ethereum address format
-      address=$(echo "$object" | jq -r '.address')
+    local errors=0
+    for object in $(echo "$keys_json" | jq -c '.[]'); do
+      # Validate Ethereum address and private key
+      local private_key=$(echo "$object" | jq -r '.private_key')
+      local address=$(echo "$object" | jq -r '.address')
+ 
       if ! [[ $address =~ ^0x[0-9a-fA-F]{40}$ ]]; then
         echo "     - Invalid Ethereum address format: $address"
         errors=$((errors + 1))
-      fi
-
-      # Validate Ethereum private key format
-      private_key=$(echo "$object" | jq -r '.private_key')
-      if ! [[ $private_key =~ ^0x[0-9a-fA-F]{64}$ ]]; then
+      elif ! [[ $private_key =~ ^0x[0-9a-fA-F]{64}$ ]]; then
         echo "     - Invalid Ethereum private key format for address $address"
         errors=$((errors + 1))
       fi
