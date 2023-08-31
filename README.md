@@ -173,7 +173,7 @@ The repository is prepared to facilitate the service deployment using GitHub act
    </td>
    <td>Variable<br /></td>
    <td>Release tag corresponding to the version of the service you want to deploy<br />
-   <code>v0.1.0</code>
+   <code>v0.2.0</code>
    </td>
    </tr>
    </tbody>
